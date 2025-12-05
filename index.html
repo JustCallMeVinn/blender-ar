@@ -29,7 +29,7 @@ scene.add(hemiLight);
 
 // Load Model
 const loader = new GLTFLoader();
-loader.load('model.glb', (gltf) => {
+loader.load('bumi.glb', (gltf) => {
     const model = gltf.scene;
     model.scale.set(1, 1, 1);
     scene.add(model);
@@ -49,3 +49,4 @@ animate();
 </script>
 </body>
 </html>
+
