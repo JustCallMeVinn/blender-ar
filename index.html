@@ -2,43 +2,75 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- VIEWPORT YANG BENAR UNTUK AR DI HP (INI YANG PALING PENTING) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <title>AR Edukasi Lapisan Bumi 3D</title>
+    
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
-        body{background:#000;overflow:hidden;height:100vh;color:#fff;position:relative}
-        
-        /* Tombol Toggle Panel (selalu kelihatan) */
-        #togglePanel{
-            position:fixed;bottom:20px;left:20px;width:56px;height:56px;
-            background:#4CAF50;border:none;border-radius:50%;
-            font-size:28px;color:#fff;cursor:pointer;z-index:99999;
-            box-shadow:0 8px 25px rgba(76,175,80,0.6);
-            transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        html, body{
+            height: 100dvh;           /* Penting untuk iOS & Android modern */
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+            touch-action: manipulation;
+            position: fixed;
+            top: 0; left: 0;
         }
-        #togglePanel:hover{transform:scale(1.15) rotate(90deg)}
-        #togglePanel:active{transform:scale(0.95)}
 
-        /* Panel utama yang muncul dari bawah */
-        #mainPanel{
-            position:fixed;bottom:20px;left:20px;right:20px;max-width:500px;
-            background:rgba(15,15,35,0.92);backdrop-filter:blur(20px);
-            border-radius:20px;border:1px solid rgba(255,255,255,0.1);
-            box-shadow:0 15px 40px rgba(0,0,0,0.6);
-            padding:18px;z-index:9999;
-            transform:translateY(120%);transition:transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* A-Frame scene full screen */
+        a-scene{
+            position: fixed !important;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100% !important;
+            height: 100dvh !important;
+            z-index: 1;
         }
-        #mainPanel.visible{transform:translateY(0)}
+
+        /* Tombol Toggle Panel */
+        #togglePanel{
+            position: fixed;
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            left: max(20px, env(safe-area-inset-left, 20px));
+            width: 56px; height: 56px;
+            background: #4CAF50; border: none; border-radius: 50%;
+            font-size: 28px; color: #fff; cursor: pointer;
+            z-index: 99999; box-shadow: 0 8px 25px rgba(76,175,80,0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+        }
+        #togglePanel:hover{transform: scale(1.15) rotate(90deg)}
+        #togglePanel:active{transform: scale(0.95)}
+
+        /* Panel utama */
+        #mainPanel{
+            position: fixed;
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            left: max(20px, env(safe-area-inset-left, 20px));
+            right: max(20px, env(safe-area-inset-right, 20px));
+            max-width: 500px;
+            background: rgba(15,15,35,0.92); backdrop-filter: blur(20px);
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            padding: 18px; z-index: 9999;
+            transform: translateY(120%);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #mainPanel.visible{transform: translateY(0)}
 
         .panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
         .panel-header h3{font-size:18px;color:#4CAF50}
         .close-btn{background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
 
-        .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;font-size:13px}
+        .status-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:15px;font-size:13px}
         .status-item span:first-child{color:#aaa}
         .status{padding:4px 8px;border-radius:6px;font-weight:bold;font-size:11px}
         .active{background:#4CAF50;color:#fff}
@@ -50,15 +82,16 @@
                transition:all 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.3);font-size:14px}
         button:hover{transform:translateY(-3px)}
         button:active{transform:scale(0.95)}
-        .primary{background:#4CAF50;color:#fff}
         .danger{background:#FF5722;color:#fff}
         .secondary{background:#2196F3;color:#fff}
 
         .slider-row{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:13px}
         .slider-row span{min-width:50px}
         input[type=range]{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,0.2);outline:none}
-        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
-            background:#4CAF50;border-radius:50%;cursor:pointer;box-shadow:0 0 12px #4CAF50}
+        input[type=range]::-webkit-slider-thumb{
+            -webkit-appearance:none;width:22px;height:22px;
+            background:#4CAF50;border-radius:50%;cursor:pointer;box-shadow:0 0 12px #4CAF50;
+        }
 
         .layer-info{margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1)}
         .layer-info h4{color:#4CAF50;margin-bottom:10px;font-size:15px}
@@ -69,25 +102,35 @@
         .outer-core{border-color:#FFC300}
         .inner-core{border-color:#fff}
 
-        /* Hint terpisah */
         #hint{
-            position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-            background:rgba(255,107,53,0.95);padding:14px 30px;border-radius:50px;
-            font-weight:bold;font-size:15px;z-index:9999;animation:pulse 2s infinite;
-            opacity:0;pointer-events:none;transition:opacity 0.5s;
+            position: fixed;
+            bottom: max(90px, calc(80px + env(safe-area-inset-bottom)));
+            left: 50%; transform: translateX(-50%);
+            background: rgba(255,107,53,0.95); padding: 14px 30px; border-radius: 50px;
+            font-weight: bold; font-size: 15px; z-index: 9999;
+            animation: pulse 2s infinite; opacity: 0; pointer-events: none;
+            transition: opacity 0.5s;
         }
         #hint.show{opacity:1}
 
-        /* Start Screen */
-        #startScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
-            display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999}
+        #startScreen{
+            position: fixed; inset: 0; background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 99999;
+        }
         #startScreen h1{font-size:2.8em;color:#4CAF50;text-shadow:0 0 20px #4CAF50}
-        #startScreen button{padding:20px 50px;font-size:19px;background:#4CAF50;color:#fff;
-            border:none;border-radius:50px;cursor:pointer;margin-top:30px;
-            box-shadow:0 10px 30px rgba(76,175,80,0.5);transition:0.3s}
+        #startScreen p{font-size:19px;text-align:center;max-width:85%;margin:20px 0}
+        #startScreen button{
+            padding:20px 50px;font-size:19px;background:#4CAF50;color:#fff;
+            border:none;border-radius:50px;cursor:pointer;
+            box-shadow:0 10px 30px rgba(76,175,80,0.5);transition:0.3s
+        }
         #startScreen button:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(76,175,80,0.7)}
 
-        @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
+        @keyframes pulse{
+            0%,100%{transform:translateX(-50%) scale(1)}
+            50%{transform:translateX(-50%) scale(1.08)}
+        }
     </style>
 </head>
 <body>
@@ -95,7 +138,7 @@
     <!-- Tombol Toggle Panel -->
     <button id="togglePanel" onclick="togglePanel()">≡</button>
 
-    <!-- Panel Utama (awalnya tersembunyi) -->
+    <!-- Panel Utama -->
     <div id="mainPanel">
         <div class="panel-header">
             <h3>Lapisan Bumi 3D</h3>
@@ -105,12 +148,10 @@
         <div class="status-grid">
             <div><span>Kamera:</span> <span id="camStatus" class="status loading">Loading...</span></div>
             <div><span>Marker:</span> <span id="markerStatus" class="status inactive">Cari Hiro</span></div>
-            <div><span>Model:</span> <span id="modelStatus" class="status inactive">Belum Upload</span></div>
             <div><span>Status:</span> <span id="openStatus">Tertutup</span></div>
         </div>
 
         <div class="btn-row">
-            <button class="primary" onclick="document.getElementById('file').click()">Upload GLB</button>
             <button class="danger" id="openBtn" onclick="toggleOpen()">Buka Lapisan</button>
             <button class="secondary" id="rotBtn" onclick="toggleRot()">Rotasi ON</button>
         </div>
@@ -139,36 +180,43 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <h1>Lapisan Bumi 3D</h1>
-        <p style="font-size:19px;text-align:center;max-width:85%;margin:20px 0">
-            Arahkan kamera ke marker <strong>Hiro</strong><br>
-            Ketuk model bumi untuk melihat lapisan dalam
-        </p>
+        <p>Arahkan kamera ke marker <strong>Hiro</strong><br>Ketuk model bumi untuk melihat lapisan dalam</p>
         <button onclick="startAR()">Mulai AR</button>
     </div>
 
-    <a-scene id="scene" embedded arjs="sourceType:webcam;debugUIEnabled:false" renderer="logarithmicDepthBuffer:true" vr-mode-ui="enabled:false" style="display:none">
+    <!-- A-Frame Scene (selalu ada, tapi disembunyikan dulu oleh startScreen) -->
+    <a-scene id="scene" embedded 
+             arjs="sourceType:webcam;debugUIEnabled:false;trackingMethod:best;"
+             renderer="logarithmicDepthBuffer:true;antialias:true;"
+             vr-mode-ui="enabled:false"
+             device-orientation-permission-ui="enabled:false">
+        
         <a-marker preset="hiro" id="marker">
-            <a-entity id="earth" scale="2 2 2" animation="property:rotation;to:0 360 0;loop:true;dur:15000;easing:linear"></a-entity>
+            <a-entity id="earth" position="0 0 0" scale="2 2 2" 
+                      animation="property: rotation; to: 0 360 0; loop: true; dur: 15000; easing: linear"
+                      earth-belahan="open:0">
+                <a-gltf-model src="bumi_fixed.glb"></a-gltf-model>
+            </a-entity>
         </a-marker>
+        
         <a-entity camera></a-entity>
     </a-scene>
-
-    <input type="file" id="file" accept=".glb,.gltf" style="display:none">
 
     <script>
         let isOpen = false, progress = 0, rotationOn = true;
 
         function togglePanel() {
-            const panel = document.getElementById('mainPanel');
-            panel.classList.toggle('visible');
+            document.getElementById('mainPanel').classList.toggle('visible');
         }
 
+        // Component animasi belah bumi
         AFRAME.registerComponent('earth-belahan', {
             schema: {open: {type: 'number', default: 0}},
             init: function () { this.ready = false; this.parts = {}; },
             update: function () {
                 const model = this.el.getObject3D('mesh');
                 if (!model || this.ready) return this.animate(this.data.open);
+                
                 this.ready = true;
                 model.traverse(o => {
                     if (!o.isMesh) return;
@@ -193,8 +241,12 @@
                     this.parts.right.position.x = this.parts.right.userData.pos.x + sep;
                     this.parts.right.rotation.y = THREE.MathUtils.degToRad(rot);
                 }
-                if (this.parts.mantle) this.parts.mantle.position.x = this.parts.mantle.userData.pos.x + (this.parts.right ? sep * 0.7 : -sep * 0.7);
-                if (this.parts.outer) this.parts.outer.position.x = this.parts.outer.userData.pos.x + (this.parts.right ? sep * 0.4 : -sep * 0.4);
+                if (this.parts.mantle) {
+                    this.parts.mantle.position.x = this.parts.mantle.userData.pos.x + (this.parts.right ? sep * 0.7 : -sep * 0.7);
+                }
+                if (this.parts.outer) {
+                    this.parts.outer.position.x = this.parts.outer.userData.pos.x + (this.parts.right ? sep * 0.4 : -sep * 0.4);
+                }
                 if (this.parts.inner) {
                     this.parts.inner.position.copy(this.parts.inner.userData.pos);
                     this.parts.inner.scale.setScalar(core);
@@ -205,37 +257,36 @@
 
         function startAR() {
             document.getElementById('startScreen').remove();
-            document.getElementById('scene').style.display = 'block';
             document.getElementById('togglePanel').style.display = 'block';
-            setTimeout(() => document.getElementById('camStatus').className = 'status active', 2000);
+            
+            setTimeout(() => {
+                document.getElementById('camStatus').className = 'status active';
+            }, 2000);
 
             document.querySelector('#marker').addEventListener('markerFound', () => {
                 document.getElementById('markerStatus').className = 'status active';
+                document.getElementById('markerStatus').textContent = 'Terdeteksi';
                 document.getElementById('hint').classList.add('show');
             });
             document.querySelector('#marker').addEventListener('markerLost', () => {
                 document.getElementById('markerStatus').className = 'status inactive';
+                document.getElementById('markerStatus').textContent = 'Cari Hiro';
                 document.getElementById('hint').classList.remove('show');
             });
         }
-
-        document.getElementById('file').onchange = e => {
-            const f = e.target.files[0];
-            if (!f) return;
-            const url = URL.createObjectURL(f);
-            const earth = document.getElementById('earth');
-            earth.innerHTML = `<a-gltf-model src="${url}"></a-gltf-model>`;
-            earth.setAttribute('earth-belahan', 'open:0');
-            document.getElementById('modelStatus').textContent = f.name.split('.')[0];
-            document.getElementById('modelStatus').className = 'status active';
-        };
 
         function toggleOpen() {
             isOpen = !isOpen;
             const target = isOpen ? 100 : 0;
             anime({
-                targets: { v: progress }, v: target, duration: 2400, easing: 'easeOutExpo',
-                update: a => { progress = Math.round(a.animations[0].currentValue); setOpen(progress); }
+                targets: { v: progress },
+                v: target,
+                duration: 2400,
+                easing: 'easeOutExpo',
+                update: a => {
+                    progress = Math.round(a.animations[0].currentValue);
+                    setOpen(progress);
+                }
             });
             document.getElementById('openBtn').textContent = isOpen ? 'Tutup Lapisan' : 'Buka Lapisan';
             document.getElementById('openStatus').textContent = isOpen ? 'Terbuka' : 'Tertutup';
@@ -256,13 +307,19 @@
         function toggleRot() {
             rotationOn = !rotationOn;
             const el = document.getElementById('earth');
-            if (rotationOn) el.setAttribute('animation', 'property:rotation;to:0 360 0;loop:true;dur:15000;easing:linear');
-            else el.removeAttribute('animation');
+            if (rotationOn) {
+                el.setAttribute('animation', 'property:rotation;to:0 360 0;loop:true;dur:15000;easing:linear');
+            } else {
+                el.removeAttribute('animation');
+            }
             document.getElementById('rotBtn').textContent = rotationOn ? 'Rotasi ON' : 'Rotasi OFF';
         }
 
+        // Ketuk model untuk buka/tutup
         document.querySelector('a-scene').addEventListener('click', e => {
-            if (e.detail.intersection && document.getElementById('earth').children.length) toggleOpen();
+            if (e.detail.intersection && document.getElementById('earth').children.length) {
+                toggleOpen();
+            }
         });
     </script>
 </body>
